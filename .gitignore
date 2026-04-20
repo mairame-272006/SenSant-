@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 .DS_Store
+# Fichiers temporaires matplotlib
+*.png
+!figures/*.png
