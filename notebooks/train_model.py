@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
 import os
+import joblib
+import numpy as np
+from sklearn.metrics import accuracy_score
 # Charger le dataset
 df = pd.read_csv("data/patients_dakar.csv" , sep='\t')
 # Verifier les dimensions
@@ -64,6 +67,9 @@ comparison = pd.DataFrame({
 'Prediction': y_pred[:10]
 })
 print(comparison)
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy : {accuracy:.2%}")
 
 # Matrice de confusion
 cm = confusion_matrix(y_test, y_pred, labels=model.classes_)
@@ -146,3 +152,36 @@ print(f"\nProbabilites par classe :")
 for classe, proba in zip(model_loaded.classes_, probas):
     bar = '#' * int(proba * 30)
     print(f" {classe:8s} : {proba:.1%} {bar}")
+
+    importances = model.feature_importances_
+
+for name, imp in sorted(zip(feature_cols, importances),
+                        key=lambda x: x[1],
+                        reverse=True):
+    print(f"{name:20s} : {imp:.3f}")
+
+
+    model = joblib.load("models/model.pkl")
+    from sklearn.metrics import accuracy_score
+
+# Exercice 2 — 3 patients fictifs
+model_loaded     = joblib.load("models/model.pkl")
+le_sexe_loaded   = joblib.load("models/encoder_sexe.pkl")
+le_region_loaded = joblib.load("models/encoder_region.pkl")
+
+patients = [
+    {"nom": "Jeune sans symptômes", "age": 17, "sexe": "M", "temperature": 37.0, "tension_sys": 120, "toux": False, "fatigue": False, "maux_tete": False, "region": "Dakar"},
+    {"nom": "Adulte avec forte fièvre", "age": 35, "sexe": "F", "temperature": 40.5, "tension_sys": 130, "toux": False, "fatigue": True, "maux_tete": True, "region": "Dakar"},
+    {"nom": "Patient âgé avec toux", "age": 65, "sexe": "M", "temperature": 38.2, "tension_sys": 145, "toux": True, "fatigue": True, "maux_tete": False, "region": "Dakar"},
+]
+
+for patient in patients:
+    sexe_enc   = le_sexe_loaded.transform([patient["sexe"]])[0]
+    region_enc = le_region_loaded.transform([patient["region"]])[0]
+    features   = [patient["age"], sexe_enc, patient["temperature"], patient["tension_sys"],
+                  int(patient["toux"]), int(patient["fatigue"]), int(patient["maux_tete"]), region_enc]
+    diagnostic = model_loaded.predict([features])[0]
+    proba      = model_loaded.predict_proba([features])[0].max()
+    print(f"--- {patient['nom']} ---")
+    print(f"Diagnostic  : {diagnostic}")
+    print(f"Probabilité : {proba:.1%}\n")
